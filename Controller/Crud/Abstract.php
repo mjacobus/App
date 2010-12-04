@@ -9,71 +9,71 @@ class App_Controller_Crud_Abstract extends Zend_Controller_Action
 {
 
     /**
-     * Post Create Rotine
-     * @param Doctrine_Record $record 
+     *
+     * @var string
      */
-    public function postCreate(Doctrine_Record $record)
-    {
-        $this->view->flash($this->model->getMessages());
-        $this->_redirect(implode('/', array(
-                $this->getRequest()->getModuleName(),
-                $this->getRequest()->getControllerName(),
-            )));
-    }
+    protected $_absoluteBaseUrl;
 
     /**
-     * Post Update
-     * @param Doctrine_Record $record 
-     */
-    public function postUpdate(Doctrine_Record $record)
-    {
-        $this->postUpdate($record);
-    }
-
-    /**
-     * Post Delete
+     *
      * @param Doctrine_Record $record
+     * @param App_Form_Abstract $form 
      */
-    public function postDelete(Doctrine_Record $record)
+    public function postCreate(Doctrine_Record $record, App_Form_Abstract $form)
     {
-        $this->postUpdate($record);
-    }
-
-    /**
-     * Do Create
-     * @param Zend_Request_Http_Request $request 
-     */
-    public function doCreate(Zend_Controller_Request_Http $request)
-    {
-        $record = $this->model->create($request->getPost());
-        if ($record) {
-            $this->postCreate($record);
-        } else {
-            $this->view->errors($this->model->getMessages());
-        }
+        $this->postUpdate($record, $form);
     }
 
     /**
      *
-     * @param Zend_Request_Http_Request $request 
+     * @param Doctrine_Record $record
+     * @param App_Form_Abstract $form
      */
-    public function doAjaxCreate(Zend_Controller_Request_Http $request)
+    public function postUpdate(Doctrine_Record $record, App_Form_Abstract $form)
     {
-        $response = array(
-            'success' => false,
-            'messages' => array(),
-            'formErrors' => array(),
-        );
-        
+        $form->setGoTo($this->getAbsoluteBaseUrl(implode('/', array(
+                    $this->getRequest()->getModuleName(),
+                    $this->getRequest()->getControllerName()
+                ))));
+    }
+
+    /**
+     *
+     * @param Doctrine_Record $record
+     * @param App_Form_Abstract $form 
+     */
+    public function postDelete(Doctrine_Record $record, App_Form_Abstract $form)
+    {
+        $this->postUpdate($record, $form);
+    }
+
+    /**
+     * Do Create
+     * @param Zend_Controller_Request_Http $request
+     * @param App_Form_Abstract $form
+     */
+    public function doCreate(Zend_Controller_Request_Http $request, App_Form_Abstract $form)
+    {
         $record = $this->model->create($request->getPost());
         if ($record) {
-            $response['success'] = true;
-        } else {
-            $response['formErrors'] = $this->model->getForm()->getErrorMessages();
+            $this->postCreate($record, $form);
         }
-        $response['message'] = $this->model->getMessages();
+        $this->setResponseHandler($request, $form);
+    }
 
-        $this->_helper->json($response);
+    /**
+     *
+     * @param Zend_Controller_Request_Http $request
+     * @param App_Form_Abstract $form 
+     */
+    public function setResponseHandler(Zend_Controller_Request_Http $request, App_Form_Abstract $form)
+    {
+        if ($request->isXmlHttpRequest()) {
+            $handler = new App_Response_Handler_Crud_Ajax_Json();
+        } else {
+            $handler = new App_Response_Handler_Crud_Http();
+        }
+        $handler->handle($form, $this);
     }
 
     public function indexAction()
@@ -84,15 +84,14 @@ class App_Controller_Crud_Abstract extends Zend_Controller_Action
     public function createAction()
     {
         $request = $this->getRequest();
-        if ($request->isXmlHttpRequest()) {
-            $this->_helper->layout->disableLayout();
-            if ($request->isPost()) {
-                $this->doAjaxCreate($request);
-            }
-        } else if ($request->isPost()) {
-            $this->doCreate($request);
+        $form = $this->model->getForm();
+        if ($request->isPost()) {
+            $form->setSuccess(true);
+            $this->doCreate($request, $form);
         }
-        $this->view->form = $this->model->getForm();
+        if (!$request->isXmlHttpRequest()) {
+            $this->view->form = $form;
+        }
     }
 
     public function readAction()
@@ -113,6 +112,40 @@ class App_Controller_Crud_Abstract extends Zend_Controller_Action
     public function listAction()
     {
 
+    }
+
+    /**
+     * Return url in format protocol://host:port
+     * @return string
+     */
+    public function getAbsoluteBaseUrl($append = '/')
+    {
+        if ($this->_absoluteBaseUrl == null) {
+
+            $protocol = explode('/', $_SERVER['SERVER_PROTOCOL']);
+            $protocol = strtolower($protocol[0]) . '://';
+
+            $port = ':' . $_SERVER['SERVER_PORT'];
+
+            if (($protocol == 'http://' && $port == ':80') || ($protocol == 'https://' && $port == ':443')) {
+                $port = '';
+            }
+
+            $host = $_SERVER['HTTP_HOST'];
+            $this->_absoluteBaseUrl = $protocol . $host . $port;
+        }
+
+        return $this->_absoluteBaseUrl . $this->getBaseUrl($append);
+    }
+
+    /**
+     * Get relative base url.
+     * @param string $append
+     * @return string
+     */
+    public function getBaseUrl($append)
+    {
+        return Zend_Controller_Front::getInstance()->getBaseUrl() . '/' . trim($append,'/');
     }
 
 }

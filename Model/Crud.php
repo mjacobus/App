@@ -64,6 +64,22 @@ class App_Model_Crud extends App_Model_Abstract
     );
 
     /**
+     *  Constructor
+     */
+    public function __construct()
+    {
+        $this->init();
+    }
+
+    /**
+     * To be overriden
+     */
+    public function init()
+    {
+        
+    }
+
+    /**
      * Try to save a record
      * @param array $values
      * @return Doctrine_Record|false false when its not ok and the record id when it is ok.
@@ -73,18 +89,17 @@ class App_Model_Crud extends App_Model_Abstract
         try {
             if ($this->isValid($values)) {
                 $values = $this->getForm()->getValues();
-                $id = $this->persist($values, $id);
+                $record = $this->persist($values, $id);
                 $this->addMessage($this->_crudMessages[self::SAVE_OK]);
-                return $id;
+                return $record;
             }
         } catch (Exception $e) {
-            $this->addMessage($this->_crudMessages[self::SAVE_ERROR]);
-            $message = $e->getMessage();
+            $this->addErrorMessage($this->_crudMessages[self::SAVE_ERROR]);
 
-            $ukPatterns = $this->_ukExceptionPatterns;
+            $exception = $e->getMessage();
 
-            foreach ($ukPatterns as $pattern) {
-                if (preg_match($pattern, $message, $matches)) {
+            foreach ($this->_ukExceptionPatterns as $pattern) {
+                if (preg_match($pattern, $exception, $matches)) {
                     if (array_key_exists(1, $matches)) {
                         $field = $matches[1];
                         if (array_key_exists($field, $this->_ukMapping)) {
@@ -95,15 +110,17 @@ class App_Model_Crud extends App_Model_Abstract
                                         '{label}' => $this->_ukMapping[$field]['label'],
                                         '{value}' => $values[$recordField],
                                 ));
+                            try {
+                                $this->getForm()->getElement($recordField)->addError($message);
+                            } catch (Exception $formException) {
+                                $this->addErrorMessage($message);
+                            }
                         } else {
-                            $message = "Registro já existe.";
+                            $this->addErrorMessage('Registro já existe.');
                         }
-                        $this->addMessage($message);
-                        return false;
                     }
                 }
             }
-            $this->addMessage($e->getMessage());
         }
         return false;
     }
@@ -201,7 +218,7 @@ class App_Model_Crud extends App_Model_Abstract
 
     /**
      *
-     * @param <type> $values 
+     * @param array $values
      */
     public function create($values)
     {

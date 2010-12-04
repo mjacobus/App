@@ -1,12 +1,36 @@
 <?php
 
 /**
- *
+ * Base for crud forms
  *
  * @author marcelo
  */
-class App_Form extends Zend_Form
+class App_Form_Abstract extends Zend_Form
 {
+
+    /**
+     * @var App_Model_Crud
+     */
+    protected $_model;
+    /**
+     * @var bool
+     */
+    protected $_success = false;
+    /**
+     * @var string
+     */
+    protected $_goTo;
+
+    /**
+     *
+     * @param App_Model_Crud $model
+     * @param array $options
+     */
+    public function __construct(App_Model_Crud $model, $options = null)
+    {
+        $this->setModel($model);
+        parent::__construct($options);
+    }
 
     /**
      * Constructor
@@ -93,7 +117,6 @@ class App_Form extends Zend_Form
                 $element->setAttrib('maxlength', $length['max']);
             }
         }
-
 
         return $element;
     }
@@ -344,6 +367,64 @@ class App_Form extends Zend_Form
         $element->addValidator(new Zend_Validate_EmailAddress());
         $this->addClass('email', $element);
         return $element;
+    }
+
+    /**
+     * Get model
+     * @param App_Form_Crud $model
+     * @return App_Model_Crud
+     */
+    public function setModel(App_Model_Crud $model)
+    {
+        $this->_model = $model;
+        return $this;
+    }
+
+    /**
+     *
+     * @return App_Model_Crud
+     */
+    public function getModel()
+    {
+        return $this->_model;
+    }
+
+    /**
+     * Set whether form was successfully processed
+     * @param bool $flag
+     */
+    public function setSuccess($flag)
+    {
+        $this->_success = (bool) $flag;
+    }
+
+    /**
+     * Get success of the form process
+     * @return bool
+     */
+    public function getSuccess()
+    {
+        return $this->_success;
+    }
+
+    /**
+     * Url to go to after processing
+     * @param string $goTo
+     * @return App_Form_Abstract
+     */
+    public function setGoTo($goTo)
+    {
+        $this->_goTo = $goTo;
+        return $this;
+    }
+
+    /**
+     * Get url to go to
+     * @return string
+     */
+    public function getGoTo()
+    {
+        return $this->_goTo;
     }
 
 }

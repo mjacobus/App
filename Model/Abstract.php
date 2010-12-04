@@ -133,4 +133,15 @@ abstract class App_Model_Abstract
         return $fc->getBaseUrl();
     }
 
+    /**
+     *
+     * @param string $string
+     * @param replace $replace
+     * @return string
+     */
+    public function replace($string, $replace)
+    {
+        return str_replace(array_keys($replace), $replace, $string);
+    }
+
 }
