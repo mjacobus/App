@@ -5,12 +5,20 @@
  *
  * @author marcelo.jacobus
  */
-class App_Exception_RegisterNotFound extends Exception
+class App_Exception_RegisterNotFound extends Zend_Exception
 {
 
-    public function __construct($message = "Registro não encontrado.", $code = null, $previous = null)
+    /**
+     * Construct the exception
+     *
+     * @param  string $msg
+     * @param  int $code
+     * @param  Exception $previous
+     * @return void
+     */
+    public function __construct($msg = 'Not Found', $code = 0, Exception $previous = null)
     {
-        parent::__construct($message, $code, $previous);
+        parent::__construct($msg, $code, $previous);
     }
 
 }
