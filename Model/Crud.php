@@ -43,25 +43,6 @@ class App_Model_Crud extends App_Model_Abstract
         'DELETE_OK' => 'Registro excluído com sucesso.',
         'DELETE_CONFIRM' => 'Tem certeza de que deseja excluir o seguinte registro?',
     );
-    /**
-     * Uk Exception patterns
-     * @var array
-     */
-    protected $_ukExceptionPatterns = array(
-        "/validator\sfailed\son\s(\w+)\s\(unique\)/i",
-        "/Duplicate\sentry\s'.+'\sfor\skey\s'(.+)'/i"
-    );
-    /**
-     * Mapping of unique keys
-     * @var array
-     */
-    protected $_ukMapping = array(
-        'filename' => array(
-            'field' => 'filename',
-            'label' => 'Nome do Arquivo',
-            'message' => 'Um registro ja existe com "{label}" igual a "{value}" '
-        )
-    );
 
     /**
      *  Constructor
@@ -77,52 +58,6 @@ class App_Model_Crud extends App_Model_Abstract
     public function init()
     {
         
-    }
-
-    /**
-     * Try to save a record
-     * @param array $values
-     * @return Doctrine_Record|false false when its not ok and the record id when it is ok.
-     */
-    public function save(array $values, $id = null)
-    {
-        try {
-            if ($this->isValid($values)) {
-                $values = $this->getForm()->getValues();
-                $record = $this->persist($values, $id);
-                $this->addMessage($this->_crudMessages[self::SAVE_OK]);
-                return $record;
-            }
-        } catch (Exception $e) {
-            $this->addErrorMessage($this->_crudMessages[self::SAVE_ERROR]);
-
-            $exception = $e->getMessage();
-
-            foreach ($this->_ukExceptionPatterns as $pattern) {
-                if (preg_match($pattern, $exception, $matches)) {
-                    if (array_key_exists(1, $matches)) {
-                        $field = $matches[1];
-                        if (array_key_exists($field, $this->_ukMapping)) {
-                            $recordField = $this->_ukMapping[$field]['field'];
-                            $message = $this->replace($this->_ukMapping[$field]['message'],
-                                    array(
-                                        '{field}' => $recordField,
-                                        '{label}' => $this->_ukMapping[$field]['label'],
-                                        '{value}' => $values[$recordField],
-                                ));
-                            try {
-                                $this->getForm()->getElement($recordField)->addError($message);
-                            } catch (Exception $formException) {
-                                $this->addErrorMessage($message);
-                            }
-                        } else {
-                            $this->addErrorMessage('Registro já existe.');
-                        }
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     /**
@@ -208,7 +143,7 @@ class App_Model_Crud extends App_Model_Abstract
     }
 
     /**
-     *
+     * Get the form
      * @return App_Form
      */
     public function getForm()
@@ -217,12 +152,14 @@ class App_Model_Crud extends App_Model_Abstract
     }
 
     /**
-     *
+     * Create an record
      * @param array $values
+     * @return boolean
      */
     public function create($values)
     {
-        return $this->save($values);
+        $record = Doctrine_Core::getTable($this->getTablelName())->create();
+        return $this->save($record, $values);
     }
 
     /**
@@ -236,22 +173,141 @@ class App_Model_Crud extends App_Model_Abstract
     }
 
     /**
-     * Persist a Record
-     * @param array $values the values to persist
-     * @param int $id the record id
-     * @throws Exception
-     * @return Doctrine_Record
+     * Save a record
+     * @param Doctrine_Record $record
+     * @param array $values
+     * @return bool
      */
-    public function persist($values, $id = null)
+    public function save(Doctrine_Record $record, array $values)
     {
-        if ($id !== null) {
-            $record = $this->getById($this->getTablelName(), $id);
-        } else {
-            $record = Doctrine_Core::getTable($this->getTablelName())->create();
+        if ($this->isValid($values)) {
+            try {
+                $record->merge($values);
+                $record->save();
+                $this->addInfoMessage($this->_crudMessages[self::SAVE_OK]);
+                return true;
+            } catch (Exception $e) {
+
+                if (!$this->handleSimpleUkException($e, $record)
+                    && !$this->handleCompositeUkException($e, $record)) {
+
+                    $this->addErrorMessage($e->getMessage());
+                }
+            }
         }
-        $record->fromArray($values);
-        $record->save();
-        return $record;
+        return false;
+    }
+
+    /**
+     * Handles composite uk errors.
+     * @param Exception $exception
+     * @param Doctrine_Record $rec
+     * @return bool true when finds the composite uk and handles it
+     */
+    public function handleCompositeUkException(Exception $exception, Doctrine_Record $rec)
+    {
+        $message = $exception->getMessage();
+        $form = $this->feature;
+        $indexes = $rec->getTable()->getOption('indexes');
+
+        foreach ($indexes as $index => $options) {
+
+            if ($options['type'] == 'unique') {
+                $fields = $options['fields'];
+                $pattern = '/[\'"]' . preg_quote($index) . '[\'"]/';
+
+                if (preg_match($pattern, $message)) {
+                    $labels = array();
+
+                    foreach ($fields as $field => $options) {
+                        $element = $form->getElement($field);
+
+                        if ($element) {
+                            $label = $element->getLabel();
+                            $labels[] = '"' . ($label ? $label : $field) . '"';
+                            $class = $element->getAttrib('class') . ' error';
+                            $element->setAttrib('class', $class)->addError('Duplicated field');
+                        } else {
+                            $labels[] = '"' . $field . '"';
+                        }
+                    }
+
+                    $serializedLabels = $this->serializeLabels($labels);
+                    $message = sprintf('Duplicated combination of field %s', $serializedLabels);
+                    $this->addErrorMessage($message);
+
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Handles simple uk errors.
+     * @param Exception $exception
+     * @param Doctrine_Record $rec
+     * @return bool true when finds the composite uk and handles it
+     */
+    public function handleSimpleUkException(Exception $exception, Doctrine_Record $rec)
+    {
+        $message = $exception->getMessage();
+        $form = $this->feature;
+        $table = $rec->getTable();
+
+        $columns = $table->getColumnNames();
+
+        foreach ($columns as $fieldName) {
+            $columnName = $table->getColumnName($fieldName);
+            $definition = $table->getColumnDefinition($columnName);
+
+            if (isset($definition['unique']) && $definition['unique'] == true) {
+                $pattern = '/\b' . preg_quote('url') . '\b/';
+
+                if (preg_match($pattern, $message)) {
+                    $element = $form->getElement($fieldName);
+
+                    if ($element) {
+                        $label = $element->getLabel();
+                        if (!$label) {
+                            $label = $fieldName;
+                        }
+
+                        $class = $element->getAttrib('class') . ' error';
+                        $element->setAttrib('class', $class)
+                            ->addError(sprintf('A record already has "%s" set to "%s"',
+                                    $label, $element->getValue()));
+                    } else {
+                        $this->addErrorMessage(sprintf('A record already has the given "%s" value', $fieldName));
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Serialize fields.
+     * I.E. apple, bannana and [put the name of another fruit here] 8-0
+     * @param array $labels
+     * @param string $glue
+     * @return string
+     * @throws App_Exception when there is no label
+     */
+    public function serializeLabels(array $labels, $glue = ' and ')
+    {
+        $total = count($labels);
+
+        if (!$total) {
+            throw new App_Exception('You must have at least one label');
+        } else if ($total == 1) {
+            return $label[0];
+        }
+
+        $last = array_pop($labels);
+
+        return implode(', ', $labels) . $glue . $last;
     }
 
 }

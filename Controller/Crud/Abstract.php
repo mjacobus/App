@@ -5,7 +5,7 @@
  *
  * @author marcelo
  */
-class App_Controller_Crud_Abstract extends Zend_Controller_Action
+abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
 {
 
     /**
