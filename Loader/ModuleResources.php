@@ -15,7 +15,7 @@ class App_Loader_ModuleResources implements Zend_Loader_Autoloader_Interface
     protected $_resourceTypes = array(
         'Form' => 'forms',
         'Menu' => 'menus',
-        'Model' => 'model',
+        'Model' => 'models',
     );
 
     /**
