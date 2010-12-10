@@ -86,7 +86,6 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         $request = $this->getRequest();
         $form = $this->model->getForm();
         if ($request->isPost()) {
-            $form->setSuccess(true);
             $this->doCreate($request, $form);
         }
         if (!$request->isXmlHttpRequest()) {
