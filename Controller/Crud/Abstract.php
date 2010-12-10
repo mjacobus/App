@@ -16,6 +16,12 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
 
     /**
      *
+     * @var App_Model_Crud
+     */
+    public $model;
+
+    /**
+     *
      * @param Doctrine_Record $record
      * @param App_Form_Abstract $form 
      */
@@ -62,6 +68,20 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     }
 
     /**
+     * Do Update
+     * @param Zend_Controller_Request_Http $request
+     * @param App_Form_Abstract $form
+     */
+    public function doUpdate(Zend_Controller_Request_Http $request, App_Form_Abstract $form)
+    {
+        $record = $this->model->update($request->getPost(), $request->getParam('id'));
+        if ($record) {
+            $this->postCreate($record, $form);
+        }
+        $this->setResponseHandler($request, $form);
+    }
+
+    /**
      *
      * @param Zend_Controller_Request_Http $request
      * @param App_Form_Abstract $form 
@@ -74,11 +94,6 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
             $handler = new App_Response_Handler_Crud_Http();
         }
         $handler->handle($form, $this);
-    }
-
-    public function indexAction()
-    {
-        
     }
 
     public function createAction()
@@ -100,6 +115,19 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
 
     public function updateAction()
     {
+        $request = $this->getRequest();
+        $form = $this->model->getForm();
+        $id = new Zend_Form_Element_Hidden('id');
+        $id->setValue($request->getParam('id'));
+        $form->addElement($id);
+        if ($request->isPost()) {
+            $this->doUpdate($request, $form);
+        } else {
+            $this->model->populateForm($request->getParam('id'));
+        }
+        if (!$request->isXmlHttpRequest()) {
+            $this->view->form = $form;
+        }
         
     }
 
@@ -144,7 +172,16 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
      */
     public function getBaseUrl($append)
     {
-        return Zend_Controller_Front::getInstance()->getBaseUrl() . '/' . trim($append,'/');
+        return Zend_Controller_Front::getInstance()->getBaseUrl() . '/' . trim($append, '/');
+    }
+
+    /**
+     * Index Action
+     */
+    public function indexAction()
+    {
+        $search = $this->_getAllParams();
+        $this->view->records = $this->model->getQuery($search)->execute();
     }
 
 }

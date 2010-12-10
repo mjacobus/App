@@ -128,13 +128,8 @@ class App_Model_Crud extends App_Model_Abstract
      */
     public function getQuery(array $params = array())
     {
-        $dql = Doctrine_Core::getTable($this->getTablelName())
-                ->createQuery()->orderBy('name ASC');
-
-        if (array_key_exists('search', $params) && $params['search']) {
-            $search = $params['search'];
-            $dql->addWhere('name like ?', "%$search%");
-        }
+        $dql = Doctrine_Query::create()
+                ->from($this->getTablelName() . ' base');
         return $dql;
     }
 
@@ -167,6 +162,16 @@ class App_Model_Crud extends App_Model_Abstract
     }
 
     /**
+     * Update an record
+     * @param array $values
+     * @return boolean
+     */
+    public function update($values, $id)
+    {
+        return $this->save($values, $id);
+    }
+
+    /**
      * Check whether is valid
      * @param array $values
      * @return bool
@@ -178,9 +183,9 @@ class App_Model_Crud extends App_Model_Abstract
 
     /**
      * Save a record
-     * @param Doctrine_Record $record
      * @param array $values
-     * @return bool
+     * @param int $id
+     * @return Doctrine_Record
      */
     public function save(array $values, $id = null)
     {
@@ -193,7 +198,7 @@ class App_Model_Crud extends App_Model_Abstract
                 $record->save();
                 $this->addInfoMessage($this->_crudMessages[self::SAVE_OK]);
                 $this->getForm()->setSuccess(true);
-                return true;
+                return $record;
             } catch (App_Exception_RegisterNotFound $e) {
                 throw $e;
             } catch (Exception $e) {
@@ -217,7 +222,7 @@ class App_Model_Crud extends App_Model_Abstract
      */
     public function getRecord($id = null)
     {
-        if ($id !== null) {
+        if ($id === null) {
             $record = Doctrine_Core::getTable($this->getTablelName())->create();
         } else {
             $record = $this->getById($id);
@@ -232,18 +237,18 @@ class App_Model_Crud extends App_Model_Abstract
     /**
      * Handles composite uk errors.
      * @param Exception $exception
-     * @param Doctrine_Record $rec
+     * @param Doctrine_Record $record
      * @return bool true when finds the composite uk and handles it
      */
-    public function handleCompositeUkException(Exception $exception, Doctrine_Record $rec)
+    public function handleCompositeUkException(Exception $exception, Doctrine_Record $record)
     {
         $message = $exception->getMessage();
-        $form = $this->feature;
-        $indexes = $rec->getTable()->getOption('indexes');
+        $form = $this->getForm();
+        $indexes = $record->getTable()->getOption('indexes');
 
         foreach ($indexes as $index => $options) {
 
-            if ($options['type'] == 'unique') {
+            if (isset($options['type']) && $options['type'] == 'unique') {
                 $fields = $options['fields'];
                 $pattern = '/[\'"]' . preg_quote($index) . '[\'"]/';
 
@@ -283,7 +288,7 @@ class App_Model_Crud extends App_Model_Abstract
     public function handleSimpleUkException(Exception $exception, Doctrine_Record $rec)
     {
         $message = $exception->getMessage();
-        $form = $this->feature;
+        $form = $this->getForm();
         $table = $rec->getTable();
 
         $columns = $table->getColumnNames();
