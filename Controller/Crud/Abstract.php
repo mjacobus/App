@@ -13,7 +13,6 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
      * @var string
      */
     protected $_absoluteBaseUrl;
-
     /**
      *
      * @var App_Model_Crud
@@ -128,7 +127,6 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         if (!$request->isXmlHttpRequest()) {
             $this->view->form = $form;
         }
-        
     }
 
     public function deleteAction()
@@ -182,6 +180,16 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     {
         $search = $this->_getAllParams();
         $this->view->records = $this->model->getQuery($search)->execute();
+    }
+
+    /**
+     * Pre dispatch
+     */
+    public function preDispatch()
+    {
+        if ($this->getRequest()->isXmlHttpRequest()) {
+            $this->_helper->layout()->disableLayout();
+        }
     }
 
 }
