@@ -20,6 +20,17 @@ class App_Form_Abstract extends Zend_Form
      * @var string
      */
     protected $_goTo;
+    /**
+     * Global decorators to apply to all elements
+     * @var null|array
+     */
+    protected $_elementDecorators = array(
+        'ViewHelper',
+        'Description',
+        'Errors',
+        array('Label', array('tag' => 'div')),
+        array('HtmlTag', array('tag' => 'div', 'class' => 'form-element')),
+    );
 
     /**
      *
@@ -30,6 +41,10 @@ class App_Form_Abstract extends Zend_Form
     {
         $this->setModel($model);
         parent::__construct($options);
+        $this->setElementDecorators($this->_elementDecorators);
+        $this->addDecorator('FormElements')
+            ->addDecorator('HtmlTag', array('tag' => 'div', 'class' => 'form-elements'))
+            ->addDecorator('Form');
     }
 
     /**
