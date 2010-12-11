@@ -25,11 +25,12 @@ class App_Form_Abstract extends Zend_Form
      * @var null|array
      */
     protected $_elementDecorators = array(
-        'ViewHelper',
         'Description',
+        'ViewHelper',
         'Errors',
+        array(array('element' => 'HtmlTag'), array('tag' => 'div')),
         array('Label', array('tag' => 'div')),
-        array('HtmlTag', array('tag' => 'div', 'class' => 'form-element')),
+        array('HtmlTag', array('tag' => 'div','class' => 'element')),
     );
 
     /**
