@@ -119,14 +119,14 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         $id = new Zend_Form_Element_Hidden('id');
         $id->setValue($request->getParam('id'));
         $form->addElement($id);
+
         if ($request->isPost()) {
             $this->doUpdate($request, $form);
         } else {
             $this->model->populateForm($request->getParam('id'));
         }
-        if (!$request->isXmlHttpRequest()) {
-            $this->view->form = $form;
-        }
+
+        $this->view->form = $form;
     }
 
     public function deleteAction()

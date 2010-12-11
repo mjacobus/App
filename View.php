@@ -12,6 +12,12 @@ class App_View extends Zend_View
 {
 
     /**
+     * The icons
+     * @var array
+     */
+    protected $_icons = array();
+
+    /**
      * Get request
      * @return Zend_Controller_Request_Abstract
      */
@@ -81,7 +87,7 @@ class App_View extends Zend_View
      */
     public function ci()
     {
-        return $this->baseUrl('/img/create.png');
+        return $this->getIcon('create');
     }
 
     /**
@@ -90,7 +96,7 @@ class App_View extends Zend_View
      */
     public function ri()
     {
-        return $this->baseUrl('/img/read.png');
+        return $this->getIcon('read');
     }
 
     /**
@@ -99,7 +105,7 @@ class App_View extends Zend_View
      */
     public function ui()
     {
-        return $this->baseUrl('/img/update.png');
+        return $this->getIcon('update');
     }
 
     /**
@@ -108,7 +114,59 @@ class App_View extends Zend_View
      */
     public function di()
     {
-        return $this->baseUrl('/img/delete.png');
+        return $this->getIcon('delete');
+    }
+
+    /**
+     *
+     * @param string $name
+     * @param string $icon
+     * @return App_View
+     */
+    public function setIcon($name, $icon)
+    {
+        $this->_icons[$name] = $icon;
+        return $this;
+    }
+
+    /**
+     * Set icons
+     * @param string $name
+     * @return string
+     * @throws App_Exception when no icon was set
+     */
+    public function getIcon($name)
+    {
+        if (isset($this->_icons[$name])) {
+            $icon = $this->_icons[$name];
+            if (!preg_match('/^[\w]{3,4}:\/\/.*/', $icon)) {
+                $icon = $this->baseUrl($icon);
+            }
+            return $icon;
+        }
+        return sprintf('There is no "%s" icon', $name);
+    }
+
+    /**
+     * Set the icons
+     * @param array $icons
+     * @return App_View
+     */
+    public function setIcons(array $icons)
+    {
+        foreach ($icons as $name => $icon) {
+            $this->setIcon($name, $icon);
+        }
+        return $this;
+    }
+
+    /**
+     * Get icons
+     * @return array
+     */
+    public function getIcons()
+    {
+        return $this->_icons;
     }
 
     /**
@@ -120,7 +178,7 @@ class App_View extends Zend_View
         $check = new Zend_Form_Element_MultiCheckbox('ids');
         $check->addMultiOption($id)
             ->setDecorators(array('viewHelper'))
-            ->setAttrib('class','crud_id');
+            ->setAttrib('class', 'crud_id');
         return $check;
     }
 
