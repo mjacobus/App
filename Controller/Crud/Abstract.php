@@ -13,6 +13,11 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
      * @var string
      */
     protected $_absoluteBaseUrl;
+    /**
+     *
+     * @var App_Model_Crud
+     */
+    public $model;
 
     /**
      *
@@ -62,6 +67,20 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     }
 
     /**
+     * Do Update
+     * @param Zend_Controller_Request_Http $request
+     * @param App_Form_Abstract $form
+     */
+    public function doUpdate(Zend_Controller_Request_Http $request, App_Form_Abstract $form)
+    {
+        $record = $this->model->update($request->getPost(), $request->getParam('id'));
+        if ($record) {
+            $this->postCreate($record, $form);
+        }
+        $this->setResponseHandler($request, $form);
+    }
+
+    /**
      *
      * @param Zend_Controller_Request_Http $request
      * @param App_Form_Abstract $form 
@@ -76,39 +95,60 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         $handler->handle($form, $this);
     }
 
-    public function indexAction()
-    {
-        
-    }
-
+    /**
+     * create action
+     */
     public function createAction()
     {
         $request = $this->getRequest();
         $form = $this->model->getForm();
+
         if ($request->isPost()) {
-            $form->setSuccess(true);
             $this->doCreate($request, $form);
         }
-        if (!$request->isXmlHttpRequest()) {
-            $this->view->form = $form;
-        }
+        
+        $this->view->form = $form;
     }
 
+    /**
+     * read action
+     */
     public function readAction()
     {
 
     }
 
+    /**
+     * update action
+     */
     public function updateAction()
     {
-        
+        $request = $this->getRequest();
+        $form = $this->model->getForm();
+        $id = new Zend_Form_Element_Hidden('id');
+        $id->setValue($request->getParam('id'));
+        $form->addElement($id);
+
+        if ($request->isPost()) {
+            $this->doUpdate($request, $form);
+        } else {
+            $this->model->populateForm($request->getParam('id'));
+        }
+
+        $this->view->form = $form;
     }
 
+    /**
+     * delete action
+     */
     public function deleteAction()
     {
         
     }
 
+    /**
+     * list action
+     */
     public function listAction()
     {
 
@@ -145,7 +185,26 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
      */
     public function getBaseUrl($append)
     {
-        return Zend_Controller_Front::getInstance()->getBaseUrl() . '/' . trim($append,'/');
+        return Zend_Controller_Front::getInstance()->getBaseUrl() . '/' . trim($append, '/');
+    }
+
+    /**
+     * Index Action
+     */
+    public function indexAction()
+    {
+        $search = $this->_getAllParams();
+        $this->view->records = $this->model->getQuery($search)->execute();
+    }
+
+    /**
+     * Pre dispatch
+     */
+    public function preDispatch()
+    {
+        if ($this->getRequest()->isXmlHttpRequest()) {
+            $this->_helper->layout()->disableLayout();
+        }
     }
 
 }

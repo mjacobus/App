@@ -28,6 +28,7 @@ class App_Model_Crud extends App_Model_Abstract
 
     const SAVE_OK = 'SAVE_OK';
     const SAVE_ERROR = 'SAVE_ERROR';
+    const FORM_ERROR = 'FORM_ERROR';
     const REGISTER_NOT_FOUND = 'REGISTER_NOT_FOUND';
     const DELETE_CONSTRAINT_ERROR = 'DELETE_CONSTRAINT_ERROR';
     const DELETE_ERROR = 'DELETE_ERROR';
@@ -35,8 +36,9 @@ class App_Model_Crud extends App_Model_Abstract
     const DELETE_CONFIRM = 'DELETE_CONFIRM';
 
     protected $_crudMessages = array(
+        'FORM_ERROR' => 'O Formulário contém valores inválidos',
         'SAVE_OK' => 'Registro salvo com sucesso.',
-        'SAVE_ERROR' => '* Erro ao salvar registro:',
+        'SAVE_ERROR' => 'Erro ao salvar registro:',
         'REGISTER_NOT_FOUND' => 'Registro não encontrado.',
         'DELETE_CONSTRAINT_ERROR' => 'O regististro não pode ser excluído pois possue vínculos.',
         'DELETE_ERROR' => 'O regististro não pode ser excluído.',
@@ -62,12 +64,15 @@ class App_Model_Crud extends App_Model_Abstract
 
     /**
      * Get a register by id
-     * @param string $table Doctrine Table name
      * @param int $id
+     * @param string $table Doctrine Table name
      * @return Doctrine_Record
      */
-    public function getById($table, $id)
+    public function getById($id, $table = null)
     {
+        if ($table === null) {
+            $table = $this->getTablelName();
+        }
         $register = Doctrine_Core::getTable($table)->find($id);
         if ($register == null) {
             throw new App_Exception_RegisterNotFound($this->_crudMessages[self::REGISTER_NOT_FOUND]);
@@ -82,7 +87,7 @@ class App_Model_Crud extends App_Model_Abstract
     public function delete($id)
     {
         try {
-            $record = $record = $this->getById($this->getTablelName(), $id);
+            $record = $record = $this->getById($id);
             $record->delete();
         } catch (App_Exception_RegisterNotFound $e) {
             throw $e;
@@ -111,7 +116,7 @@ class App_Model_Crud extends App_Model_Abstract
      */
     public function populateForm($id)
     {
-        $record = $this->getById($this->getTablelName(), $id);
+        $record = $this->getById($id);
         $this->getForm()->populate($record->toArray());
         return $this;
     }
@@ -123,13 +128,8 @@ class App_Model_Crud extends App_Model_Abstract
      */
     public function getQuery(array $params = array())
     {
-        $dql = Doctrine_Core::getTable($this->getTablelName())
-                ->createQuery()->orderBy('name ASC');
-
-        if (array_key_exists('search', $params) && $params['search']) {
-            $search = $params['search'];
-            $dql->addWhere('name like ?', "%$search%");
-        }
+        $dql = Doctrine_Query::create()
+                ->from($this->getTablelName() . ' base');
         return $dql;
     }
 
@@ -144,7 +144,7 @@ class App_Model_Crud extends App_Model_Abstract
 
     /**
      * Get the form
-     * @return App_Form
+     * @return App_Form_Abstract
      */
     public function getForm()
     {
@@ -158,8 +158,17 @@ class App_Model_Crud extends App_Model_Abstract
      */
     public function create($values)
     {
-        $record = Doctrine_Core::getTable($this->getTablelName())->create();
-        return $this->save($record, $values);
+        return $this->save($values);
+    }
+
+    /**
+     * Update an record
+     * @param array $values
+     * @return boolean
+     */
+    public function update($values, $id)
+    {
+        return $this->save($values, $id);
     }
 
     /**
@@ -174,20 +183,26 @@ class App_Model_Crud extends App_Model_Abstract
 
     /**
      * Save a record
-     * @param Doctrine_Record $record
      * @param array $values
-     * @return bool
+     * @param int $id
+     * @return Doctrine_Record
      */
-    public function save(Doctrine_Record $record, array $values)
+    public function save(array $values, $id = null)
     {
-        if ($this->isValid($values)) {
+        if (!$this->isValid($values)) {
+            $this->addErrorMessage($this->_crudMessages[self::FORM_ERROR]);
+        } else {
             try {
+                $record = $this->getRecord($id);
                 $record->merge($values);
                 $record->save();
                 $this->addInfoMessage($this->_crudMessages[self::SAVE_OK]);
-                return true;
+                $this->getForm()->setSuccess(true);
+                return $record;
+            } catch (App_Exception_RegisterNotFound $e) {
+                throw $e;
             } catch (Exception $e) {
-
+                $this->addErrorMessage($this->_crudMessages[self::SAVE_ERROR]);
                 if (!$this->handleSimpleUkException($e, $record)
                     && !$this->handleCompositeUkException($e, $record)) {
 
@@ -199,20 +214,41 @@ class App_Model_Crud extends App_Model_Abstract
     }
 
     /**
+     * Get or create an record
+     * @param int $id
+     * @return Doctrine_Record
+     * @throws  App_Exception_RegisterNotFound when id is provided and record is
+     *          not found
+     */
+    public function getRecord($id = null)
+    {
+        if ($id === null) {
+            $record = Doctrine_Core::getTable($this->getTablelName())->create();
+        } else {
+            $record = $this->getById($id);
+        }
+
+        if (!$record) {
+            throw new App_Exception_RegisterNotFound();
+        }
+        return $record;
+    }
+
+    /**
      * Handles composite uk errors.
      * @param Exception $exception
-     * @param Doctrine_Record $rec
+     * @param Doctrine_Record $record
      * @return bool true when finds the composite uk and handles it
      */
-    public function handleCompositeUkException(Exception $exception, Doctrine_Record $rec)
+    public function handleCompositeUkException(Exception $exception, Doctrine_Record $record)
     {
         $message = $exception->getMessage();
-        $form = $this->feature;
-        $indexes = $rec->getTable()->getOption('indexes');
+        $form = $this->getForm();
+        $indexes = $record->getTable()->getOption('indexes');
 
         foreach ($indexes as $index => $options) {
 
-            if ($options['type'] == 'unique') {
+            if (isset($options['type']) && $options['type'] == 'unique') {
                 $fields = $options['fields'];
                 $pattern = '/[\'"]' . preg_quote($index) . '[\'"]/';
 
@@ -252,7 +288,7 @@ class App_Model_Crud extends App_Model_Abstract
     public function handleSimpleUkException(Exception $exception, Doctrine_Record $rec)
     {
         $message = $exception->getMessage();
-        $form = $this->feature;
+        $form = $this->getForm();
         $table = $rec->getTable();
 
         $columns = $table->getColumnNames();
