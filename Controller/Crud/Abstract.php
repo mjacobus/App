@@ -95,23 +95,32 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         $handler->handle($form, $this);
     }
 
+    /**
+     * create action
+     */
     public function createAction()
     {
         $request = $this->getRequest();
         $form = $this->model->getForm();
+
         if ($request->isPost()) {
             $this->doCreate($request, $form);
         }
-        if (!$request->isXmlHttpRequest()) {
-            $this->view->form = $form;
-        }
+        
+        $this->view->form = $form;
     }
 
+    /**
+     * read action
+     */
     public function readAction()
     {
 
     }
 
+    /**
+     * update action
+     */
     public function updateAction()
     {
         $request = $this->getRequest();
@@ -129,11 +138,17 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         $this->view->form = $form;
     }
 
+    /**
+     * delete action
+     */
     public function deleteAction()
     {
         
     }
 
+    /**
+     * list action
+     */
     public function listAction()
     {
 
