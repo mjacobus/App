@@ -24,6 +24,11 @@ class App_Model_Crud extends App_Model_Abstract
      * @var Admin_Form_Search
      */
     protected $_searchForm;
+    /**
+     * The glue
+     * @var string
+     */
+    protected $_glue = ' e ';
 
 
     const SAVE_OK = 'SAVE_OK';
@@ -34,16 +39,28 @@ class App_Model_Crud extends App_Model_Abstract
     const DELETE_ERROR = 'DELETE_ERROR';
     const DELETE_OK = 'DELETE_OK';
     const DELETE_CONFIRM = 'DELETE_CONFIRM';
+    const DUPLICATED_UK = 'DUPLICATED_UK';
+    const DUPLICATED_COMPOSED_UK = 'DUPLICATED_UK';
+    const DUPLICATED_UK_GENERIC = 'DUPLICATED_UK_GENERIC';
+    const DUPLICATED_COMPOSED_UK_GENERIC = 'DUPLICATED_COMPOSED_UK_GENERIC';
 
+    /**
+     * Messages for crud operations
+     * @var array
+     */
     protected $_crudMessages = array(
-        'FORM_ERROR' => 'O Formulário contém valores inválidos',
-        'SAVE_OK' => 'Registro salvo com sucesso.',
-        'SAVE_ERROR' => 'Erro ao salvar registro:',
-        'REGISTER_NOT_FOUND' => 'Registro não encontrado.',
-        'DELETE_CONSTRAINT_ERROR' => 'O regististro não pode ser excluído pois possue vínculos.',
-        'DELETE_ERROR' => 'O regististro não pode ser excluído.',
-        'DELETE_OK' => 'Registro excluído com sucesso.',
-        'DELETE_CONFIRM' => 'Tem certeza de que deseja excluir o seguinte registro?',
+        self::FORM_ERROR => 'O Formulário contém valores inválidos',
+        self::SAVE_OK => 'Registro salvo com sucesso.',
+        self::SAVE_ERROR => 'Erro ao salvar registro:',
+        self::REGISTER_NOT_FOUND => 'Registro não encontrado.',
+        self::DELETE_CONSTRAINT_ERROR => 'O regististro não pode ser excluído pois possue vínculos.',
+        self::DELETE_ERROR => 'O regististro não pode ser excluído.',
+        self::DELETE_OK => 'Registro excluído com sucesso.',
+        self::DELETE_CONFIRM => 'Tem certeza de que deseja excluir o seguinte registro?',
+        self::DUPLICATED_UK => 'Já existe um registro com "%label%" igual a "%value%"',
+        self::DUPLICATED_COMPOSED_UK => 'Combinação de valores duplidada para os campos %fields%',
+        self::DUPLICATED_UK_GENERIC => 'Registro duplicado.',
+        self::DUPLICATED_COMPOSED_UK_GENERIC => 'Combinação de valores duplidada.',
     );
 
     /**
@@ -269,9 +286,9 @@ class App_Model_Crud extends App_Model_Abstract
                     }
 
                     $serializedLabels = $this->serializeLabels($labels);
-                    $message = sprintf('Duplicated combination of field %s', $serializedLabels);
+                    $message = $this->getCrudMessage(self::DUPLICATED_COMPOSED_UK,
+                            array('%fields%' => $serializedLabels));
                     $this->addErrorMessage($message);
-
                     return true;
                 }
             }
@@ -298,7 +315,7 @@ class App_Model_Crud extends App_Model_Abstract
             $definition = $table->getColumnDefinition($columnName);
 
             if (isset($definition['unique']) && $definition['unique'] == true) {
-                $pattern = '/\b' . preg_quote('url') . '\b/';
+                $pattern = '/\b' . preg_quote($fieldName) . '\b/';
 
                 if (preg_match($pattern, $message)) {
                     $element = $form->getElement($fieldName);
@@ -311,10 +328,13 @@ class App_Model_Crud extends App_Model_Abstract
 
                         $class = $element->getAttrib('class') . ' error';
                         $element->setAttrib('class', $class)
-                            ->addError(sprintf('A record already has "%s" set to "%s"',
-                                    $label, $element->getValue()));
+                            ->addError($this->getCrudMessage(
+                                    self::DUPLICATED_UK, array(
+                                    '%value%' => $element->getValue(),
+                                    '%label%' => $label
+                                )));
                     } else {
-                        $this->addErrorMessage(sprintf('A record already has the given "%s" value', $fieldName));
+                        $this->addErrorMessage($this->getCrudMessage(self::DUPLICATED_UK_GENERIC));
                     }
                     return true;
                 }
@@ -331,8 +351,12 @@ class App_Model_Crud extends App_Model_Abstract
      * @return string
      * @throws App_Exception when there is no label
      */
-    public function serializeLabels(array $labels, $glue = ' and ')
+    public function serializeLabels(array $labels, $glue = null)
     {
+        if ($glue === null) {
+            $glue = $this->getGlue();
+        }
+
         $total = count($labels);
 
         if (!$total) {
@@ -344,6 +368,30 @@ class App_Model_Crud extends App_Model_Abstract
         $last = array_pop($labels);
 
         return implode(', ', $labels) . $glue . $last;
+    }
+
+    /**
+     * Get messages for crud actions
+     * @param string $code
+     * @param array $replacements
+     * @return string
+     */
+    public function getCrudMessage($code, array $replacements)
+    {
+        if (isset($this->_crudMessages[$code])) {
+            $message = $this->_crudMessages[$code];
+            return $this->replace($message, $replacements);
+        }
+        throw new App_Exception(sprintf('There is no message template for "%s"', $code));
+    }
+
+    /**
+     * Get the glue for serializing labels
+     * @return string
+     */
+    public function getGlue()
+    {
+        return $this->_glue;
     }
 
 }
