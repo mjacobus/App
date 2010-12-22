@@ -106,7 +106,7 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         if ($request->isPost()) {
             $this->doCreate($request, $form);
         }
-        
+
         $this->view->form = $form;
     }
 
@@ -194,7 +194,18 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     public function indexAction()
     {
         $search = $this->_getAllParams();
-        $this->view->records = $this->model->getQuery($search)->execute();
+        $dql = $this->model->getQuery($search);
+
+        $pager = new Doctrine_Pager(
+            $dql,
+            $this->_getParam('page', 1),
+            $this->_getParam('per-page', 10)
+        );
+
+        $this->view->pagination()->setPager($pager);
+
+        $this->view->registers = $pager->execute();
+        $this->view->records = $pager->execute();
     }
 
     /**
