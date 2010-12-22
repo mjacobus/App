@@ -28,9 +28,9 @@ class App_Form_Abstract extends Zend_Form
         'Description',
         'ViewHelper',
         'Errors',
-        array(array('element' => 'HtmlTag'), array('tag' => 'div')),
+        array(array('element' => 'HtmlTag'), array('tag' => 'div', 'class' => 'element')),
         array('Label', array('tag' => 'div')),
-        array('HtmlTag', array('tag' => 'div','class' => 'element')),
+        array('HtmlTag', array('tag' => 'div','class' => 'label-and-element')),
     );
 
     /**
@@ -46,14 +46,6 @@ class App_Form_Abstract extends Zend_Form
         $this->addDecorator('FormElements')
             ->addDecorator('HtmlTag', array('tag' => 'div', 'class' => 'form-elements'))
             ->addDecorator('Form');
-    }
-
-    /**
-     * Constructor
-     */
-    public function init()
-    {
-        $this->setAttrib('class', 'validate');
     }
 
     /**
@@ -83,7 +75,8 @@ class App_Form_Abstract extends Zend_Form
     public function addSubmit($label = 'Salvar', $name = 'submit')
     {
         $element = new Zend_Form_Element_Submit($name);
-        $element->setLabel($label);
+        $element->setLabel($label)
+            ->setDecorators(array());
         $this->addElement($element);
         return $this;
     }
