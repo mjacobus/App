@@ -255,4 +255,15 @@ class App_View extends Zend_View
         return $url;
     }
 
+    /**
+     * Get param
+     * @param string $name
+     * @param mixed $default
+     * @return string
+     */
+    public function param($name, $default = '')
+    {
+        return $this->getRequest()->getParam($name,$default);
+    }
+
 }
