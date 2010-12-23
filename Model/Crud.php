@@ -159,6 +159,8 @@ class App_Model_Crud extends App_Model_Abstract
                 ->from($this->getTablelName() . ' base');
 
         if (isset($params['search'])) {
+            
+            $fields = $this->getSearchFields();
             $words = $this->getSearchWords($params['search']);
 
             foreach ($words as $word) {
@@ -484,7 +486,6 @@ class App_Model_Crud extends App_Model_Abstract
      */
     public function getSearchWords($search)
     {
-        $fields = $this->getSearchFields();
         $search = preg_replace('/\s/', ' ', $search);
         $words = explode(' ', $search);
         return $words;
