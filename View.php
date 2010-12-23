@@ -194,13 +194,13 @@ class App_View extends Zend_View
         }
 
         $request = $this->getRequest();
-        $params = array(
-            'module' => $request->getModuleName(),
-            'controller' => $request->getControllerName(),
-            'action' => null,
-        );
-        
-        $orders = explode(',', $request->getParam('order',''));
+        $params = $request->getParams();
+
+        if ($request->getParam('order')) {
+            $orders = explode(',', $request->getParam('order'));
+        } else {
+            $orders = array();
+        }
 
         foreach ($orders as $i => $oldOrder) {
             $parts = explode('_', $oldOrder);
@@ -210,28 +210,23 @@ class App_View extends Zend_View
             }
         }
 
-
         $newOrder = strtolower($order) . '_asc';
         array_unshift($orders, $newOrder);
-        $params['order'] = trim(implode(',', $orders),',');
+        $params['order'] = implode(',', $orders);
 
-
-        $url = $this->url($params, null, true,false);
+        $url = $this->url($params, null, true, false);
         $html = "<a class=\"order\" href=\"$url\"><img src=\"" . $this->baseUrl("/img/order_asc.gif") . "\"/></a>";
-
         $html .= $label;
 
         $newOrder = strtolower($order) . '_desc';
         array_shift($orders);
         array_unshift($orders, $newOrder);
-        $params['order'] = trim(implode(',', $orders),',');
+        $params['order'] = implode(',', $orders);
 
-        $url = $this->url($params, null, true,false);
+        $url = $this->url($params, null, true, false);
         $html .= "<a class=\"order\" href=\"$url\"><img src=\"" . $this->baseUrl("/img/order_desc.gif") . "\"/></a>";
 
         return $html;
-        return '<div class="order">'. $html . '</div>';
-
     }
 
 }

@@ -159,13 +159,18 @@ class App_Model_Crud extends App_Model_Abstract
                 ->from($this->getTablelName() . ' base');
 
         if (isset($params['search'])) {
-            $fields = $this->getSearchFields();
-            $search = preg_replace('/\s/', ' ', $params['search']);
-            $concat = 'CONCAT(' . implode(',', $fields) . ') like ?';
-            $words = explode(' ', $search);
+            $words = $this->getSearchWords($params['search']);
 
             foreach ($words as $word) {
-                $dql->addWhere($concat, "%$word%");
+                $conditions = array();
+                $params = array();
+
+                foreach ($fields as $field) {
+                    $conditions[] = "$field like ?";
+                    $params[] = "%$word%";
+                }
+
+                $dql->addWhere(implode(' OR ', $conditions), $params);
             }
         }
 
@@ -470,6 +475,19 @@ class App_Model_Crud extends App_Model_Abstract
     public function getSearchFields()
     {
         return $this->_searchFields;
+    }
+
+    /**
+     * Get array of words to search for using like, mostly
+     * @param string $search
+     * @return array
+     */
+    public function getSearchWords($search)
+    {
+        $fields = $this->getSearchFields();
+        $search = preg_replace('/\s/', ' ', $search);
+        $words = explode(' ', $search);
+        return $words;
     }
 
 }

@@ -189,7 +189,7 @@ class App_View_Helper_Pagination extends Zend_View_Helper_Url
     {
         $pager = $this->getPager();
         $total = $pager->getQuery()->count();
-        $first = $pager->getFirstIndice();
+        $first = $total ? $pager->getFirstIndice() : 0;
         $last = $pager->getLastIndice();
         
         $html = "<div class=\"counter\">($first a $last de $total)</div>";
