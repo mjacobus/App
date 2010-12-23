@@ -39,7 +39,7 @@ class App_View extends Zend_View
             'action' => null
         );
 
-        return $this->url($crud, 'default', false) . $append;
+        return parent::url($crud, 'default', false) . $append;
     }
 
     /**
@@ -227,6 +227,32 @@ class App_View extends Zend_View
         $html .= "<a class=\"order\" href=\"$url\"><img src=\"" . $this->baseUrl("/img/order_desc.gif") . "\"/></a>";
 
         return $html;
+    }
+
+    /**
+     * Generates an url given the name of a route.
+     *
+     * @access public
+     *
+     * @param  array $urlOptions Options passed to the assemble method of the Route object.
+     * @param  mixed $name The name of a Route to use. If null it will use the current Route
+     * @param  bool $reset Whether or not to reset the route defaults with those provided
+     * @return string Url for the link href attribute.
+     */
+    public function url(array $urlOptions = array(), $name = null, $reset = false, $encode = true)
+    {
+        $url = parent::url($urlOptions, $name, $reset, $encode);
+
+        $data = Zend_Controller_Front::getInstance()->getRequest()->getParams();
+        unset($data['module']);
+        unset($data['action']);
+        unset($data['controller']);
+        $get = str_replace('&amp;', '&', http_build_query($data));
+
+        if (strlen(trim($get, '?'))) {
+            $url .= '?' . $get;
+        }
+        return $url;
     }
 
 }

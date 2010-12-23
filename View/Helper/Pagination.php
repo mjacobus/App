@@ -161,7 +161,7 @@ class App_View_Helper_Pagination extends Zend_View_Helper_Url
     {
         $url = parent::url($urlOptions, $name, $reset, $encode);
 
-        $data = $c = Zend_Controller_Front::getInstance()->getRequest()->getParams();
+        $data = Zend_Controller_Front::getInstance()->getRequest()->getParams();
         unset($data['module']);
         unset($data['action']);
         unset($data['controller']);
