@@ -36,10 +36,31 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
      */
     public function postUpdate(Doctrine_Record $record, App_Form_Abstract $form)
     {
-        $form->setGoTo($this->getAbsoluteBaseUrl(implode('/', array(
+        $request = $this->getRequest();
+
+        $goTo = $this->getAbsoluteBaseUrl(implode('/', array(
                     $this->getRequest()->getModuleName(),
                     $this->getRequest()->getControllerName()
-                ))));
+                )));
+
+        $data = array();
+
+        if ($request->getParam('search')) {
+            $data['search'] = $request->getParam('search');
+        }
+        
+        if ($request->getParam('page')) {
+            $data['page'] = $request->getParam('page');
+        }
+        
+        if (count($data)) {
+            $get = str_replace('&amp;', '&', http_build_query($data));
+            if (strlen(trim($get, '?'))) {
+                $goTo .= '?' . $get;
+            }
+        }
+
+        $form->setGoTo($goTo);
     }
 
     /**
@@ -197,9 +218,9 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         $dql = $this->model->getQuery($search);
 
         $pager = new Doctrine_Pager(
-            $dql,
-            $this->_getParam('page', 1),
-            $this->_getParam('per-page', 10)
+                $dql,
+                $this->_getParam('page', 1),
+                $this->_getParam('per-page', 10)
         );
 
         $this->view->pagination()->setPager($pager);

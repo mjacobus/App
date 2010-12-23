@@ -39,7 +39,14 @@ class App_View extends Zend_View
             'action' => null
         );
 
-        return parent::url($crud, 'default', false) . $append;
+        $url = parent::url($crud, 'default', false) . $append;
+
+        $params = explode('?', $this->url());
+        
+        if (count($params) > 1) {
+            $url .= '?' . $params[1];
+        }
+        return $url;
     }
 
     /**
@@ -247,6 +254,7 @@ class App_View extends Zend_View
         unset($data['module']);
         unset($data['action']);
         unset($data['controller']);
+        unset($data['id']);
         $get = str_replace('&amp;', '&', http_build_query($data));
 
         if (strlen(trim($get, '?'))) {
@@ -263,7 +271,7 @@ class App_View extends Zend_View
      */
     public function param($name, $default = '')
     {
-        return $this->getRequest()->getParam($name,$default);
+        return $this->getRequest()->getParam($name, $default);
     }
 
 }
