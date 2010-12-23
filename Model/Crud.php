@@ -29,6 +29,16 @@ class App_Model_Crud extends App_Model_Abstract
      * @var string
      */
     protected $_glue = ' e ';
+    /**
+     * Mapping for ordering
+     * @var array
+     */
+    protected $_orderMapping = array();
+    /**
+     * The search fields
+     * @var array
+     */
+    protected $_searchFields = array();
 
 
     const SAVE_OK = 'SAVE_OK';
@@ -147,6 +157,21 @@ class App_Model_Crud extends App_Model_Abstract
     {
         $dql = Doctrine_Query::create()
                 ->from($this->getTablelName() . ' base');
+
+        if (isset($params['search'])) {
+            $fields = $this->getSearchFields();
+            $search = preg_replace('/\s/', ' ', $params['search']);
+            $concat = 'CONCAT(' . implode(',', $fields) . ') like ?';
+            $words = explode(' ', $search);
+
+            foreach ($words as $word) {
+                $dql->addWhere($concat, "%$word%");
+            }
+        }
+
+        if (isset($params['order'])) {
+            $this->addOrder($dql, $params['order']);
+        }
         return $dql;
     }
 
@@ -392,6 +417,59 @@ class App_Model_Crud extends App_Model_Abstract
     public function getGlue()
     {
         return $this->_glue;
+    }
+
+    /**
+     * Add order to the query
+     * @param Doctrine_Query $dql
+     * @param string $order
+     */
+    public function addOrder(Doctrine_Query $dql, $order)
+    {
+        $orders = explode(',', $order);
+        $orderBy = array();
+
+        foreach ($orders as $order) {
+
+            $parts = explode('_', $order);
+            $orderKey = $parts[0];
+
+            if (array_key_exists($orderKey, $this->_orderMapping)) {
+
+                $order = $this->_orderMapping[$orderKey];
+                $direction = ' ASC';
+
+                if (array_key_exists(1, $parts) && (strtoupper($parts[1]) !== 'ASC')) {
+                    $direction = ' DESC';
+                }
+
+                $orderBy[] = $order . $direction;
+            }
+        }
+
+        if (count($orderBy)) {
+            $dql->orderBy(implode(',', $orderBy));
+        }
+    }
+
+    /**
+     * Set the fields to search
+     * @param array $fields
+     * @return App_Model_Crud
+     */
+    public function setSearchFields(array $fields = array())
+    {
+        $this->_searchFields = $fields;
+        return $this;
+    }
+
+    /**
+     * The fields to search
+     * @return array
+     */
+    public function getSearchFields()
+    {
+        return $this->_searchFields;
     }
 
 }

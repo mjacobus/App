@@ -89,7 +89,7 @@ class App_Form_Abstract extends Zend_Form
      * @param array $length default to array('min' => 0, 'max' => 255)
      * @return Zend_Form_Element_Text
      */
-    public function getTextElement($name, $label, $required = true, $length = array('min' => 0, 'max' => 255))
+    public function getTextElement($name, $label = '', $required = true, $length = array('min' => 0, 'max' => 255))
     {
         $element = new Zend_Form_Element_Text($name);
         $this->trim($element)->setRequired($element, $required);

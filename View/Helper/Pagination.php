@@ -43,11 +43,11 @@ class App_View_Helper_Pagination extends Zend_View_Helper_Url
      */
     private function _setUp()
     {
-        $c = Zend_Controller_Front::getInstance()->getRequest();
+        $r = Zend_Controller_Front::getInstance()->getRequest();
 
         $urlParts = array(
-            'module' => $c->getModuleName(),
-            'controller' => $c->getControllerName(),
+            'module' => $r->getModuleName(),
+            'controller' => $r->getControllerName(),
             'action' => null,
         );
 
@@ -85,10 +85,11 @@ class App_View_Helper_Pagination extends Zend_View_Helper_Url
                 )
         );
         $pages = $pagerRange->rangeAroundPage();
-        $html = '';
+
+        $html = '<div class="pager">';
 
         if ($pager->haveToPaginate()) {
-            $html = '<div class="pagination"><ul>';
+            $html .= '<div class="pagination"><ul>';
 
             if (!in_array(1, $pages)) {
                 $html .= '<li class="first">' . $this->getLink(1, '&lt;&lt;') . '</li>';
@@ -108,7 +109,8 @@ class App_View_Helper_Pagination extends Zend_View_Helper_Url
             $html .= '</ul></div>';
         }
 
-        $this->_buffer = $html;
+        $html .= $this->getCounter();
+        '</div>';
         return $html;
     }
 
@@ -178,6 +180,20 @@ class App_View_Helper_Pagination extends Zend_View_Helper_Url
     public function __toString()
     {
         return $this->render();
+    }
+
+    /**
+     * @return string
+     */
+    public function getCounter()
+    {
+        $pager = $this->getPager();
+        $total = $pager->getQuery()->count();
+        $first = $pager->getFirstIndice();
+        $last = $pager->getLastIndice();
+        
+        $html = "<div class=\"counter\">($first a $last de $total)</div>";
+        return $html;
     }
 
 }
