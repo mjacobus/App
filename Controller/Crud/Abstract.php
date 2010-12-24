@@ -43,23 +43,7 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
                     $this->getRequest()->getControllerName()
                 )));
 
-        $data = array();
-
-        if ($request->getParam('search')) {
-            $data['search'] = $request->getParam('search');
-        }
-        
-        if ($request->getParam('page')) {
-            $data['page'] = $request->getParam('page');
-        }
-        
-        if (count($data)) {
-            $get = str_replace('&amp;', '&', http_build_query($data));
-            if (strlen(trim($get, '?'))) {
-                $goTo .= '?' . $get;
-            }
-        }
-
+        $goTo .= $this->view->getExtraParams();
         $form->setGoTo($goTo);
     }
 

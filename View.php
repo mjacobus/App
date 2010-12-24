@@ -30,23 +30,27 @@ class App_View extends Zend_View
      * Get crud base url for the current request
      * @param string $append
      */
-    public function getCrudUrl($append = '/')
+
+    /**
+     *
+     * @param string $action
+     * @param int $id
+     * @return string 
+     */
+    public function getCrudUrl($action, $id = null)
     {
         $request = $this->getRequest();
-        $crud = array(
+        $params = array(
             'module' => $request->getModuleName(),
             'controller' => $request->getControllerName(),
-            'action' => null
+            'action' => $action,
         );
 
-        $url = parent::url($crud, 'default', true) . $append;
-
-        $params = explode('?', $this->url());
-        
-        if (count($params) > 1) {
-            $url .= '?' . $params[1];
+        if ($id !== null) {
+            $params['id'] = $id;
         }
-        return $url;
+        
+        return $this->url($params, 'default', true) . $this->getExtraParams();
     }
 
     /**
@@ -55,7 +59,7 @@ class App_View extends Zend_View
      */
     public function c()
     {
-        return $this->getCrudUrl('/create');
+        return $this->getCrudUrl('create');
     }
 
     /**
@@ -65,7 +69,7 @@ class App_View extends Zend_View
      */
     public function r($id)
     {
-        return $this->getCrudUrl('/read/id/' . $id);
+        return $this->getCrudUrl('read', $id);
     }
 
     /**
@@ -75,7 +79,7 @@ class App_View extends Zend_View
      */
     public function u($id)
     {
-        return $this->getCrudUrl('/update/id/' . $id);
+        return $this->getCrudUrl('update', $id);
     }
 
     /**
@@ -85,7 +89,7 @@ class App_View extends Zend_View
      */
     public function d($id)
     {
-        return $this->getCrudUrl('/delete/id/' . $id);
+        return $this->getCrudUrl('delete', $id);
     }
 
     /**
@@ -237,33 +241,6 @@ class App_View extends Zend_View
     }
 
     /**
-     * Generates an url given the name of a route.
-     *
-     * @access public
-     *
-     * @param  array $urlOptions Options passed to the assemble method of the Route object.
-     * @param  mixed $name The name of a Route to use. If null it will use the current Route
-     * @param  bool $reset Whether or not to reset the route defaults with those provided
-     * @return string Url for the link href attribute.
-     */
-    public function url(array $urlOptions = array(), $name = null, $reset = false, $encode = true)
-    {
-        $url = parent::url($urlOptions, $name, $reset, $encode);
-
-        $data = Zend_Controller_Front::getInstance()->getRequest()->getParams();
-        unset($data['module']);
-        unset($data['action']);
-        unset($data['controller']);
-        unset($data['id']);
-        $get = str_replace('&amp;', '&', http_build_query($data));
-
-        if (strlen(trim($get, '?'))) {
-            $url .= '?' . $get;
-        }
-        return $url;
-    }
-
-    /**
      * Get param
      * @param string $name
      * @param mixed $default
@@ -272,6 +249,31 @@ class App_View extends Zend_View
     public function param($name, $default = '')
     {
         return $this->getRequest()->getParam($name, $default);
+    }
+
+    /**
+     * Get params for search, order, page and per page.
+     */
+    public function getExtraParams()
+    {
+        $data = array();
+        $extraParams = array('search', 'order', 'per-page', 'page');
+        $request = $this->getRequest();
+
+        foreach ($extraParams as $param) {
+            if ($request->getParam($param)) {
+                $data[$param] = $request->getParam($param);
+            }
+        }
+
+        if (count($data)) {
+            $get = str_replace('&amp;', '&', http_build_query($data));
+            if (strlen(trim($get, '?'))) {
+                return '?' . $get;
+            }
+        }
+
+        return '';
     }
 
 }

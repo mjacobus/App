@@ -165,14 +165,14 @@ class App_Model_Crud extends App_Model_Abstract
 
             foreach ($words as $word) {
                 $conditions = array();
-                $params = array();
+                $queryParams = array();
 
                 foreach ($fields as $field) {
                     $conditions[] = "$field like ?";
-                    $params[] = "%$word%";
+                    $queryParams[] = "%$word%";
                 }
 
-                $dql->addWhere(implode(' OR ', $conditions), $params);
+                $dql->addWhere(implode(' OR ', $conditions), $queryParams);
             }
         }
 
