@@ -299,7 +299,7 @@ class App_Model_Crud extends App_Model_Abstract
 
             if (isset($options['type']) && $options['type'] == 'unique') {
                 $fields = $options['fields'];
-                $pattern = '/[\'"]' . preg_quote($index) . '[\'"]/';
+                $pattern = '/[\'"]' . preg_quote($index) . '(_idx)?[\'"]/';
 
                 if (preg_match($pattern, $message)) {
                     $labels = array();
