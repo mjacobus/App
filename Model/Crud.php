@@ -50,7 +50,7 @@ class App_Model_Crud extends App_Model_Abstract
     const DELETE_OK = 'DELETE_OK';
     const DELETE_CONFIRM = 'DELETE_CONFIRM';
     const DUPLICATED_UK = 'DUPLICATED_UK';
-    const DUPLICATED_COMPOSED_UK = 'DUPLICATED_UK';
+    const DUPLICATED_COMPOSED_UK = 'DUPLICATED_COMPOSED_UK';
     const DUPLICATED_UK_GENERIC = 'DUPLICATED_UK_GENERIC';
     const DUPLICATED_COMPOSED_UK_GENERIC = 'DUPLICATED_COMPOSED_UK_GENERIC';
 
@@ -159,7 +159,7 @@ class App_Model_Crud extends App_Model_Abstract
                 ->from($this->getTablelName() . ' base');
 
         if (isset($params['search'])) {
-            
+
             $fields = $this->getSearchFields();
             $words = $this->getSearchWords($params['search']);
 
@@ -307,11 +307,11 @@ class App_Model_Crud extends App_Model_Abstract
                     foreach ($fields as $field => $options) {
                         $element = $form->getElement($field);
 
-                        if ($element) {
+                        if ($element && !($element instanceof Zend_Form_Element_Hidden)) {
                             $label = $element->getLabel();
                             $labels[] = '"' . ($label ? $label : $field) . '"';
                             $class = $element->getAttrib('class') . ' error';
-                            $element->setAttrib('class', $class)->addError('Duplicated field');
+                            $element->setAttrib('class', $class)->addError('Valor duplicado');
                         } else {
                             $labels[] = '"' . $field . '"';
                         }
@@ -415,6 +415,18 @@ class App_Model_Crud extends App_Model_Abstract
             return $this->replace($message, $replacements);
         }
         throw new App_Exception(sprintf('There is no message template for "%s"', $code));
+    }
+
+    /**
+     * Set a crud message
+     * @param string $code
+     * @param  string $message
+     * @return App_Model_Crud
+     */
+    public function setCrudMessage($code, $message)
+    {
+        $this->_crudMessages[$code] = $message;
+        return $this;
     }
 
     /**

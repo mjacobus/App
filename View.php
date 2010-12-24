@@ -50,7 +50,7 @@ class App_View extends Zend_View
             $params['id'] = $id;
         }
         
-        return $this->url($params, 'default', true) . $this->getExtraParams();
+        return $this->url($params, 'default', false) . $this->getExtraParams();
     }
 
     /**
