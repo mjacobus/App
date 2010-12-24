@@ -39,7 +39,7 @@ class App_View extends Zend_View
             'action' => null
         );
 
-        $url = parent::url($crud, 'default', false) . $append;
+        $url = parent::url($crud, 'default', true) . $append;
 
         $params = explode('?', $this->url());
         
