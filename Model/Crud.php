@@ -408,7 +408,7 @@ class App_Model_Crud extends App_Model_Abstract
      * @param array $replacements
      * @return string
      */
-    public function getCrudMessage($code, array $replacements)
+    public function getCrudMessage($code, array $replacements = array())
     {
         if (isset($this->_crudMessages[$code])) {
             $message = $this->_crudMessages[$code];
