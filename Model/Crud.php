@@ -243,8 +243,7 @@ class App_Model_Crud extends App_Model_Abstract
         } else {
             try {
                 $record = $this->getRecord($id);
-                $record->merge($values);
-                $record->save();
+                $this->_saveRecord($record, $values);
                 $this->addInfoMessage($this->_crudMessages[self::SAVE_OK]);
                 $this->getForm()->setSuccess(true);
                 return $record;
@@ -260,6 +259,17 @@ class App_Model_Crud extends App_Model_Abstract
             }
         }
         return false;
+    }
+
+    /**
+     * Save the record
+     * @param Doctrine_Record $record
+     * @param array $data 
+     */
+    protected function _saveRecord(Doctrine_Record $record, array $data)
+    {
+        $record->merge($values);
+        $record->save();
     }
 
     /**

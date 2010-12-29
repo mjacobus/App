@@ -21,7 +21,7 @@ class App_Controller_Plugin_ImageResizer extends Zend_Controller_Plugin_Abstract
     {
         if ($request->getControllerName() == 'image' && $request->getModuleName() == 'default') {
             try {
-                $model = App_Model_Image::getInstance();
+                $model = App_Image::getInstance();
                 $model->setFile($request->getParam('file') . '.' . $request->getParam('extention'))
                     ->setWidth($request->getParam('width', 150))
                     ->setHeight($request->getParam('height', 150))

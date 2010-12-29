@@ -7,7 +7,7 @@ require_once 'WideImage/WideImage.php';
  *
  * @author marcelo.jacobus
  */
-class App_Image extends Model_Abstract
+class App_Image
 {
 
     /**
@@ -143,7 +143,6 @@ class App_Image extends Model_Abstract
     public function setWidth($width)
     {
         $this->_width = (int) $width;
-        $this->setResizedFile();
         return $this;
     }
 
@@ -164,7 +163,6 @@ class App_Image extends Model_Abstract
     public function setHeight($height)
     {
         $this->_height = (int) $height;
-        $this->setResizedFile();
         return $this;
     }
 
@@ -207,7 +205,6 @@ class App_Image extends Model_Abstract
         if (count($parts)) {
             $this->setFileExtention(array_pop($parts));
             $this->_file = strtolower(implode('.', $parts));
-            $this->setResizedFile();
             return $this;
         }
         throw new Exception("File with no extention given: '$file'");
@@ -221,28 +218,12 @@ class App_Image extends Model_Abstract
     public function getFile($absolutePath = true)
     {
         $file = $this->_file . '.' . $this->getFileExtention();
-        if ($absolutePath) {
-            return $this->getOriginalPath() . '/' . $file;
-        } else {
-            return$file;
-        }
-    }
 
-    /**
-     * Set file to be resized/displayed
-     * @param string $width
-     * @return App_Image
-     */
-    public function setResizedFile()
-    {
-        $file = $this->getFile(false);
-        $parts = explode('.', $file);
-        $extention = array_pop($parts);
-        $file = implode('.', $parts);
-        $file .= '_' . $this->getWidth() . 'x' . $this->getHeight();
-        $file .= ".$extention";
-        $this->_resizedFile = $file;
-        return $this;
+        if ($absolutePath) {
+            $subdir = $this->getDirname($file);
+            $file = $this->getOriginalPath() . "/$subdir/$file";
+        }
+        return $file;
     }
 
     /**
@@ -252,10 +233,15 @@ class App_Image extends Model_Abstract
      */
     public function getResizedFile($absolutePath = true)
     {
+        $file = $this->getFile(false);
+
         if ($absolutePath) {
-            return $this->getResizedPath() . '/' . $this->_resizedFile;
+            $sizeDir = $this->getWidth() . 'x' . $this->getHeight();
+            $subdir = $this->getDirname($file);
+            $file = $this->getResizedPath() . "/$sizeDir/$subdir/$file";
         }
-        return $this->_resizedFile;
+
+        return $file;
     }
 
     /**
@@ -284,14 +270,24 @@ class App_Image extends Model_Abstract
 
     /**
      *
-     * @return 
+     * @return binary
      */
     public function getFileContent()
     {
-        if (!$this->resizedExists()) {
-            $this->resize();
+        if (file_exists($this->getFile())) {
+
+            if (!$this->resizedExists()) {
+                $this->resize();
+            }
+
+            $file = $this->getResizedFile();
+
+            if (file_exists($file)) {
+                return file_get_contents($file);
+            }
         }
-        return file_get_contents($this->getResizedFile());
+
+        throw new App_Exception(sprintf('File "%s" do not exist', $this->getFile()));
     }
 
     /**
@@ -319,7 +315,15 @@ class App_Image extends Model_Abstract
         $height = $this->getHeight();
 
         $image = WideImage::load($original);
-        $resized = $image->resize($width, $height);
+        $resized = $image->resize($width, $height, 'inside');
+
+        if (false) {
+            $resized->resizeCanvas($width, $height, 'center', 'center', 0xffffff, 'up')
+                ->crop('center', 'center', $width, $height);
+        }
+
+
+        $this->mkdir(dirname($this->getResizedFile()));
         $resized->saveToFile($this->getResizedFile());
 
         return $this;
@@ -400,6 +404,122 @@ class App_Image extends Model_Abstract
     public function getFileExtention()
     {
         return $this->_fileExtention;
+    }
+
+    /**
+     * Save given file to a new location within the App_Image file structure
+     * @param string $image
+     * @param bool $deleteOriginal
+     * @return string 
+     */
+    public function saveImage($image, $deleteOriginal = true)
+    {
+        if (file_exists($image)) {
+            $imageParts = explode('.', $image);
+            $extention = array_pop($imageParts);
+
+            $filename = $this->strToHex(md5_file($image)) . '.' . strtolower($extention);
+
+            $path = $this->getOriginalPath() . '/' . $this->getDirname($filename);
+
+            $this->mkdir($path);
+            $saveTo = $path . '/' . $filename;
+
+            WideImage::load($image)->saveToFile($saveTo);
+
+            if ($deleteOriginal) {
+                unlink($image);
+            }
+
+            return $filename;
+        }
+
+        throw new App_Exception(sprintf('file "%s" not found', $image));
+    }
+
+    /**
+     * Convert to hexadecimal
+     * @param string $string
+     * @return string
+     */
+    function strToHex($string)
+    {
+        $hex = '';
+        $length = strlen($string);
+        for ($i = 0; $i < $length; $i++) {
+            $hex .= dechex(ord($string[$i]));
+        }
+        return $hex;
+    }
+
+    /**
+     * Get the dirname for a given filename
+     * @param string $filename
+     * @return string
+     */
+    public function getDirname($filename)
+    {
+        if (preg_match('/(([a-f0-9]{1})([a-f0-9]{2})([a-f0-9]{2})[a-f0-9]{28,})\.\w{3,4}/', $filename, $matches)) {
+
+            $path = implode(DIRECTORY_SEPARATOR, array(
+                    $matches[2],
+                    $matches[3],
+                    $matches[4],
+                ));
+
+            return $path;
+        } else {
+            return dirname($filename);
+        }
+    }
+
+    /**
+     * Mkdir recursive
+     * @param string $dirname
+     * @return App_Image
+     */
+    public function mkdir($dirname)
+    {
+        if (!file_exists($dirname)) {
+            if (!mkdir($dirname, 0770, true)) {
+                throw new App_Exception(sprintf('Failed to make direcotry "%s"', $dirname));
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Remove the image and its resized versions
+     * @param string $filename
+     */
+    public function removeImage($filename)
+    {
+        if (preg_match('/[a-f0-9]{32,}\.\w{3,4}/', $filename, $matches)) {
+            $subdir = $this->getDirname($filename);
+            $original = $this->getOriginalPath() . "/$subdir/$filename";
+
+            if (file_exists($original)) {
+                unlink($original);
+            }
+
+            $resizedPath = $this->getResizedPath();
+            $dh = opendir($resizedPath);
+
+            while (false !== ($sizeFolder = readdir($dh))) {
+
+                if (!in_array($sizeFolder, array('.', '..'))) {
+                    $file = "$resizedPath/$sizeFolder/$subdir/$filename";
+
+                    if (file_exists($file)) {
+                        unlink($file);
+                    }
+                }
+            }
+            closedir($dh);
+        } else {
+            unlink($filename);
+        }
+        return $this;
     }
 
 }

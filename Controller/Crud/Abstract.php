@@ -65,9 +65,13 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     public function doCreate(Zend_Controller_Request_Http $request, App_Form_Abstract $form)
     {
         $record = $this->model->create($request->getPost());
+
         if ($record) {
             $this->postCreate($record, $form);
+        } else {
+            $form->populate($request->getPost());
         }
+        
         $this->setResponseHandler($request, $form);
     }
 
@@ -79,9 +83,13 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     public function doUpdate(Zend_Controller_Request_Http $request, App_Form_Abstract $form)
     {
         $record = $this->model->update($request->getPost(), $request->getParam('id'));
+
         if ($record) {
             $this->postCreate($record, $form);
+        } else {
+            $form->populate($request->getPost());
         }
+        
         $this->setResponseHandler($request, $form);
     }
 
