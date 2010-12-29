@@ -315,13 +315,17 @@ class App_Image
         $height = $this->getHeight();
 
         $image = WideImage::load($original);
-        $resized = $image->resize($width, $height, 'inside');
 
-        if (false) {
-            $resized->resizeCanvas($width, $height, 'center', 'center', 0xffffff, 'up')
-                ->crop('center', 'center', $width, $height);
+        //$image->setTransparentColor(0xffffff);
+        $color = $image->getTransparentColor();
+
+        if (true) {
+            $resized = $image->resize($width, $height, 'inside')
+                    ->resizeCanvas($width, $height, 'center', 'center', $color, 'up')
+                    ->crop('center', 'center', $width, $height);
+        } else {
+            $resized = $image->resize($width, $height, 'inside');
         }
-
 
         $this->mkdir(dirname($this->getResizedFile()));
         $resized->saveToFile($this->getResizedFile());
