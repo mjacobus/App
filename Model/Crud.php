@@ -143,9 +143,33 @@ class App_Model_Crud extends App_Model_Abstract
      */
     public function populateForm($id)
     {
+        $form = $this->getForm();
         $record = $this->getById($id);
-        $this->getForm()->populate($record->toArray());
+        $this->prePopulateForm($record,$form);
+        $form->populate($record->toArray());
+        $this->postPopulateForm($record,$form);
         return $this;
+    }
+
+
+    /**
+     * Pre pupulate rotine 
+     * @param Doctrine_Record $record
+     * @param App_Form_Abstract $form 
+     */
+    public function prePopulateForm(Doctrine_Record $record, App_Form_Abstract $form)
+    {
+        
+    }
+    
+    /**
+     * Post populate form rotine
+     * @param Doctrine_Record $record
+     * @param App_Form_Abstract $form
+     */
+    public function postPopulateForm(Doctrine_Record $record, App_Form_Abstract $form)
+    {
+
     }
 
     /**
