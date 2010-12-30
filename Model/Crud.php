@@ -268,7 +268,7 @@ class App_Model_Crud extends App_Model_Abstract
      */
     protected function _saveRecord(Doctrine_Record $record, array $data)
     {
-        $record->merge($values);
+        $record->merge($data);
         $record->save();
     }
 
