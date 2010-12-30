@@ -119,6 +119,8 @@ class App_Model_Crud extends App_Model_Abstract
         } catch (App_Exception_RegisterNotFound $e) {
             throw $e;
         } catch (Exception $e) {
+            $this->_logException($e);
+
             $message = $e->getMessage();
             $dependencyRegexp = '/Integrity\sconstraint\sviolation/';
 
@@ -145,12 +147,11 @@ class App_Model_Crud extends App_Model_Abstract
     {
         $form = $this->getForm();
         $record = $this->getById($id);
-        $this->prePopulateForm($record,$form);
+        $this->prePopulateForm($record, $form);
         $form->populate($record->toArray());
-        $this->postPopulateForm($record,$form);
+        $this->postPopulateForm($record, $form);
         return $this;
     }
-
 
     /**
      * Pre pupulate rotine 
@@ -161,7 +162,7 @@ class App_Model_Crud extends App_Model_Abstract
     {
         
     }
-    
+
     /**
      * Post populate form rotine
      * @param Doctrine_Record $record
@@ -202,7 +203,10 @@ class App_Model_Crud extends App_Model_Abstract
 
         if (isset($params['order'])) {
             $this->addOrder($dql, $params['order']);
+        } else {
+            $this->addDefaultOrder($dql);
         }
+
         return $dql;
     }
 
@@ -279,6 +283,7 @@ class App_Model_Crud extends App_Model_Abstract
                     && !$this->handleCompositeUkException($e, $record)) {
 
                     $this->addErrorMessage($e->getMessage());
+                    $this->_logException($e);
                 }
             }
         }
@@ -506,6 +511,17 @@ class App_Model_Crud extends App_Model_Abstract
     }
 
     /**
+     * Add order to the query
+     * @param Doctrine_Query $dql
+     */
+    public function addDefaultOrder(Doctrine_Query $dql)
+    {
+        $order = array_values($this->_orderMapping);
+        $field = array_key_exists(0, $order) ? $order[0] : 'id';
+        $dql->orderBy($field . " ASC");
+    }
+
+    /**
      * Set the fields to search
      * @param array $fields
      * @return App_Model_Crud
@@ -535,6 +551,15 @@ class App_Model_Crud extends App_Model_Abstract
         $search = preg_replace('/\s/', ' ', $search);
         $words = explode(' ', $search);
         return $words;
+    }
+
+    /**
+     * Log the
+     * @param Exception $e 
+     */
+    public function _logException(Exception $e)
+    {
+        App_Logger_Db::logException($e);
     }
 
 }

@@ -25,7 +25,7 @@ class App_Response_Handler_Crud_Http
         }
 
         foreach ($model->getAllMessages() as $type => $messages) {
-            $messager->addMessages($model->getMessages($type));
+            $messager->addMessages($messages);
         }
 
         if ($form->getSuccess()) {
