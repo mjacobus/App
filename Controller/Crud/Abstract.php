@@ -128,7 +128,8 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
      */
     public function readAction()
     {
-
+        $id = $this->getRequest()->getParam('id');
+        $this->view->record = $this->model->getById($id);
     }
 
     /**

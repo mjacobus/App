@@ -117,6 +117,7 @@ class App_Model_Crud extends App_Model_Abstract
             $record = $record = $this->getById($id);
             $record->delete();
         } catch (App_Exception_RegisterNotFound $e) {
+            $this->_logException($e);
             throw $e;
         } catch (Exception $e) {
             $this->_logException($e);
@@ -276,6 +277,7 @@ class App_Model_Crud extends App_Model_Abstract
                 $this->getForm()->setSuccess(true);
                 return $record;
             } catch (App_Exception_RegisterNotFound $e) {
+                $this->_logException($e);
                 throw $e;
             } catch (Exception $e) {
                 $this->addErrorMessage($this->_crudMessages[self::SAVE_ERROR]);
@@ -283,8 +285,8 @@ class App_Model_Crud extends App_Model_Abstract
                     && !$this->handleCompositeUkException($e, $record)) {
 
                     $this->addErrorMessage($e->getMessage());
-                    $this->_logException($e);
                 }
+                $this->_logException($e);
             }
         }
         return false;
@@ -404,10 +406,8 @@ class App_Model_Crud extends App_Model_Abstract
                                     '%value%' => $element->getValue(),
                                     '%label%' => $label
                                 )));
-                    } else {
-                        $this->addErrorMessage($this->getCrudMessage(self::DUPLICATED_UK_GENERIC));
+                        return true;
                     }
-                    return true;
                 }
             }
         }

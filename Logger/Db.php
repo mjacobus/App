@@ -71,6 +71,10 @@ class App_Logger_Db extends App_Model_Crud
     {
         $params = Zend_Controller_Front::getInstance()->getRequest()->getParams();
 
+        if (isset($params['error_handler'])) {
+            unset($params['error_handler']);
+        }
+
         $data = array(
             'message' => $exception->getMessage(),
             'exception' => get_class($exception),
