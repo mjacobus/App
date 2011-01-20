@@ -71,7 +71,7 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         } else {
             $form->populate($request->getPost());
         }
-        
+
         $this->setResponseHandler($request, $form);
     }
 
@@ -89,7 +89,7 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
         } else {
             $form->populate($request->getPost());
         }
-        
+
         $this->setResponseHandler($request, $form);
     }
 
@@ -169,24 +169,16 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     }
 
     /**
-     * Return url in format protocol://host:port
+     * Return url in format protocol://www.host.com:port + $append
+     * @param string $append
      * @return string
      */
     public function getAbsoluteBaseUrl($append = '/')
     {
         if ($this->_absoluteBaseUrl == null) {
-
-            $protocol = explode('/', $_SERVER['SERVER_PROTOCOL']);
-            $protocol = strtolower($protocol[0]) . '://';
-
-            $port = ':' . $_SERVER['SERVER_PORT'];
-
-            if (($protocol == 'http://' && $port == ':80') || ($protocol == 'https://' && $port == ':443')) {
-                $port = '';
-            }
-
-            $host = $_SERVER['HTTP_HOST'];
-            $this->_absoluteBaseUrl = $protocol . $host . $port;
+            $request = $this->getRequest();
+            $url = $request->getScheme() . '://' . $request->getHttpHost();
+            $this->_absoluteBaseUrl = $url;
         }
 
         return $this->_absoluteBaseUrl . $this->getBaseUrl($append);
@@ -233,3 +225,4 @@ abstract class App_Controller_Crud_Abstract extends Zend_Controller_Action
     }
 
 }
+
